@@ -10,7 +10,7 @@ start:
     call   check_cpuid
     call   check_long_mode
 
-    call setup_page_table
+    call setup_page_tables
     call enable_paging
 
     lgdt [gdt64.pointer]
@@ -73,7 +73,7 @@ check_long_mode:
     mov    al, "L"
     jmp    error
 
-setup_page_table:
+setup_page_tables:
     mov eax, page_table_l3
     or eax, 0b11 ; present, writable
     mov [page_table_l4], eax
@@ -84,9 +84,9 @@ setup_page_table:
 
     mov ecx, 0
 .loop:
-    mov eax, 0x200000 ; 2Mib
+    mov eax, 0x200000 ; 2MiB
     mul ecx
-    or eax, 0b1000001 ; present, writable, huge page
+    or eax, 0b10000011 ; present, writable, huge page
     mov [page_table_l2 + ecx * 8], eax
 
     inc ecx
@@ -106,7 +106,7 @@ enable_paging:
     mov cr4, eax
 
     ; enable long mode
-    mov ecx, 0xc0000080
+    mov ecx, 0xC0000080
     rdmsr ; read model-specific register (MSR)
     or eax, 1 << 8 ; LM bit (8)
     wrmsr ; write MSR
@@ -143,7 +143,7 @@ section .rodata
 gdt64:
     dq 0 ; zero entry
 .code_segment: equ $ - gdt64
-    dq (1 << 43 ) | ( 1<< 44) | (1 << 47) | (1 << 53) ; code segment
+    dq (1 << 43) | (1 << 44) | (1 << 47) | (1 << 53) ; code segment
 .pointer:
     dw $ - gdt64 - 1
     dq gdt64
